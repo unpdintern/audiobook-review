@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audiobook Review Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Bitter:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2026;
+    --border: #2a2d35;
+    --accent: #f0a500;
+    --accent2: #e05a2b;
+    --text: #e8e9ec;
+    --text-dim: #7a7f8e;
+    --text-muted: #454952;
+    --highlight: rgba(240,165,0,0.18);
+    --tag-pacing: #3b82f6;
+    --tag-pronunciation: #ec4899;
+    --tag-tone: #8b5cf6;
+    --tag-timing: #10b981;
+    --tag-other: #6b7280;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Bitter', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--text-dim); font-weight: 400; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* SETUP SCREEN */
+  #setup-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px;
+    max-width: 560px;
+    width: 100%;
+  }
+
+  .setup-card h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .setup-card p {
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+
+  .file-drop {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 14px;
+    position: relative;
+  }
+
+  .file-drop:hover { border-color: var(--accent); background: rgba(240,165,0,0.04); }
+
+  .file-drop input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .file-drop .drop-icon { font-size: 28px; margin-bottom: 8px; display: block; }
+
+  .file-drop .drop-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .file-drop .drop-label strong { color: var(--text); }
+  .file-drop .file-chosen { font-size: 12px; color: var(--accent); margin-top: 6px; font-family: 'JetBrains Mono', monospace; }
+
+  .setup-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+
+  .setup-hint strong { color: var(--text-dim); }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #0e0f11;
+    border: none;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.2s;
+  }
+
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* APP SCREEN */
+  #app-screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  #app-screen.active { display: flex; }
+
+  .app-body {
+    display: grid;
+    grid-template-columns: 220px 1fr 320px;
+    flex: 1;
+    overflow: hidden;
+    height: calc(100vh - 53px);
+  }
+
+  /* PLAYLIST PANEL */
+  .playlist-panel {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .playlist-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .playlist-list::-webkit-scrollbar { width: 4px; }
+  .playlist-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .playlist-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+  }
+
+  .playlist-item:hover { background: var(--surface2); }
+  .playlist-item.active { background: rgba(240,165,0,0.1); }
+  .playlist-item.active .playlist-num { color: var(--accent); }
+  .playlist-item.done .playlist-num { color: var(--tag-timing); }
+
+  .playlist-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    width: 24px;
+    flex-shrink: 0;
+  }
+
+  .playlist-name {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.3;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .playlist-item.active .playlist-name { color: var(--text); }
+
+  .playlist-tag-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent2);
+    flex-shrink: 0;
+  }
+
+  /* MAIN PANEL */
+  .main-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+
+  /* PLAYER BAR */
+  .player-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    flex-shrink: 0;
+  }
+
+  .player-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .chapter-info { flex: 1; min-width: 0; }
+
+  .chapter-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chapter-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .player-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ctrl-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 7px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.15s, border-color 0.15s;
+    display: flex; align-items: center; gap: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .ctrl-btn:hover { background: var(--border); }
+
+  .ctrl-btn.play-btn {
+    background: var(--accent);
+    color: #0e0f11;
+    border-color: var(--accent);
+    font-size: 16px;
+    padding: 8px 18px;
+  }
+
+  .ctrl-btn.play-btn:hover { opacity: 0.88; }
+
+  .ctrl-btn.tag-btn {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: white;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 8px 16px;
+  }
+
+  .ctrl-btn.tag-btn:hover { opacity: 0.88; }
+  .ctrl-btn.tag-btn:active { transform: scale(0.96); }
+
+  .ctrl-btn.next-btn {
+    background: var(--surface2);
+    border-color: var(--border);
+    color: var(--text-dim);
+  }
+
+  .ctrl-btn.next-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  .speed-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 7px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .time-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    min-width: 42px;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 5px;
+    background: var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    width: 0%;
+    pointer-events: none;
+    transition: width 0.1s linear;
+  }
+
+  .tag-markers {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+  }
+
+  .tag-marker {
+    position: absolute;
+    top: -3px;
+    width: 3px;
+    height: 11px;
+    border-radius: 2px;
+    background: var(--accent2);
+    transform: translateX(-50%);
+  }
+
+  /* AUTO-ADVANCE BANNER */
+  .advance-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    background: rgba(240,165,0,0.08);
+    border-bottom: 1px solid rgba(240,165,0,0.2);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .advance-banner.show { display: flex; }
+
+  .advance-cancel {
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .advance-cancel:hover { background: rgba(240,165,0,0.15); }
+
+  /* TRANSCRIPT */
+  .transcript-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+    scroll-behavior: smooth;
+  }
+
+  .transcript-area::-webkit-scrollbar { width: 6px; }
+  .transcript-area::-webkit-scrollbar-track { background: transparent; }
+  .transcript-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .sentence {
+    display: inline;
+    padding: 2px 0;
+    border-radius: 3px;
+    font-size: 16px;
+    line-height: 1.9;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+  }
+
+  .sentence:hover { color: var(--text); }
+
+  .sentence.active {
+    color: var(--text);
+    background: var(--highlight);
+    padding: 2px 5px;
+    margin: 0 -5px;
+  }
+
+  .sentence.tagged { border-bottom: 2px solid var(--accent2); }
+
+  .no-alignment {
+    color: var(--text-dim);
+    font-style: italic;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  /* TAGS PANEL */
+  .tags-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .tag-filter-row {
+    padding: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .filter-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .filter-btn:hover { border-color: var(--text-dim); color: var(--text-dim); }
+  .filter-btn.active { color: white; }
+  .filter-btn[data-filter="all"].active { background: var(--text-dim); border-color: var(--text-dim); }
+  .filter-btn[data-filter="pacing"].active { background: var(--tag-pacing); border-color: var(--tag-pacing); }
+  .filter-btn[data-filter="pronunciation"].active { background: var(--tag-pronunciation); border-color: var(--tag-pronunciation); }
+  .filter-btn[data-filter="tone"].active { background: var(--tag-tone); border-color: var(--tag-tone); }
+  .filter-btn[data-filter="timing"].active { background: var(--tag-timing); border-color: var(--tag-timing); }
+  .filter-btn[data-filter="other"].active { background: var(--tag-other); border-color: var(--tag-other); }
+
+  .tags-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .tags-list::-webkit-scrollbar { width: 4px; }
+  .tags-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .tag-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .tag-item:hover { border-color: var(--accent); }
+
+  .tag-item-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .tag-chapter-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .tag-timestamp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .tag-category-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    color: white;
+  }
+
+  .tag-sentence-text {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    font-style: italic;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .tag-note {
+    font-size: 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.4;
+  }
+
+  .tag-delete {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 2px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .tag-delete:hover { color: #ef4444; }
+
+  .tags-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .tags-empty .empty-icon { font-size: 32px; margin-bottom: 12px; display: block; opacity: 0.4; }
+
+  /* EXPORT BAR */
+  .export-bar {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .btn-export {
+    flex: 1;
+    padding: 9px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+
+  .btn-export:hover { background: var(--border); color: var(--text); border-color: var(--text-dim); }
+
+  /* TAG MODAL */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    animation: fadeIn 0.15s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 16px 16px 0 0;
+    padding: 24px 20px 32px;
+    width: 100%;
+    max-width: 600px;
+    animation: slideUp 0.2s ease;
+  }
+
+  .modal h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .modal .modal-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+
+  .modal .sentence-preview {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+    font-style: italic;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .cat-btn {
+    padding: 7px 4px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+
+  .cat-btn[data-cat="pacing"]:hover, .cat-btn[data-cat="pacing"].selected { border-color: var(--tag-pacing); background: var(--tag-pacing); color: white; }
+  .cat-btn[data-cat="pronunciation"]:hover, .cat-btn[data-cat="pronunciation"].selected { border-color: var(--tag-pronunciation); background: var(--tag-pronunciation); color: white; }
+  .cat-btn[data-cat="tone"]:hover, .cat-btn[data-cat="tone"].selected { border-color: var(--tag-tone); background: var(--tag-tone); color: white; }
+  .cat-btn[data-cat="timing"]:hover, .cat-btn[data-cat="timing"].selected { border-color: var(--tag-timing); background: var(--tag-timing); color: white; }
+  .cat-btn[data-cat="other"]:hover, .cat-btn[data-cat="other"].selected { border-color: var(--tag-other); background: var(--tag-other); color: white; }
+
+  .note-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'Bitter', serif;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    margin-bottom: 14px;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+  }
+
+  .note-input:focus { border-color: var(--accent); }
+  .note-input::placeholder { color: var(--text-muted); }
+
+  .modal-actions { display: flex; gap: 8px; }
+
+  .btn-cancel {
+    flex: 1;
+    padding: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-cancel:hover { background: var(--border); }
+
+  .btn-save {
+    flex: 2;
+    padding: 12px;
+    background: var(--accent2);
+    border: none;
+    color: white;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .btn-save:hover { opacity: 0.88; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 20px;
+    z-index: 300;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-8px); }
+
+  /* PROGRESS INDICATOR */
+  .book-progress {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 0 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Audiobook Review <span>Studio</span></div>
+  <div class="header-actions">
+    <span class="book-progress" id="book-progress"></span>
+    <button class="ctrl-btn" onclick="resetApp()" title="Load new files">↩ Reset</button>
+  </div>
+</header>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <h2>Load Book Session</h2>
+    <p>Select all your chapter audio files and all alignment JSON files at once. The app will match them up and play through the whole book in order.</p>
+
+    <div class="file-drop">
+      <input type="file" id="audio-file-input" accept="audio/*" multiple onchange="handleAudioFiles(this)">
+      <span class="drop-icon">🎧</span>
+      <div class="drop-label"><strong>Audio Files</strong><br>Select all Chapter_XX.wav files at once</div>
+      <div class="file-chosen" id="audio-chosen"></div>
+    </div>
+
+    <div class="file-drop">
+      <input type="file" id="align-file-input" accept=".json" multiple onchange="handleAlignFiles(this)">
+      <span class="drop-icon">📄</span>
+      <div class="drop-label"><strong>Alignment JSON Files</strong><br>Select all Chapter_XX_alignment.json files (optional)</div>
+      <div class="file-chosen" id="align-chosen"></div>
+    </div>
+
+    <div class="setup-hint">
+      <strong>Tip:</strong> In Windows Explorer, press Ctrl+A to select all files, or Ctrl+click to pick specific chapters.
+      Audio files without a matching alignment will still play — you just won't get transcript sync for those chapters.
+    </div>
+
+    <button class="btn-primary" id="start-btn" onclick="startSession()" disabled>
+      ▶ Start Review Session
+    </button>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen">
+  <div class="app-body">
+
+    <!-- LEFT: PLAYLIST -->
+    <div class="playlist-panel">
+      <div class="panel-header">
+        <span class="panel-title">Chapters</span>
+        <span class="tag-count" id="playlist-count" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);background:rgba(240,165,0,0.12);padding:2px 8px;border-radius:20px;"></span>
+      </div>
+      <div class="playlist-list" id="playlist-list"></div>
+    </div>
+
+    <!-- MIDDLE: PLAYER + TRANSCRIPT -->
+    <div class="main-panel">
+      <div class="player-bar">
+        <div class="player-top">
+          <div class="chapter-info">
+            <div class="chapter-title" id="chapter-title">—</div>
+            <div class="chapter-subtitle" id="chapter-subtitle"></div>
+          </div>
+          <div class="player-controls">
+            <button class="ctrl-btn" onclick="seekRelative(-10)" title="Back 10s">«10</button>
+            <button class="ctrl-btn play-btn" id="play-btn" onclick="togglePlay()">▶</button>
+            <button class="ctrl-btn" onclick="seekRelative(10)" title="Forward 10s">10»</button>
+            <select class="speed-select" onchange="setSpeed(this.value)" title="Playback speed">
+              <option value="0.5">0.5×</option>
+              <option value="0.75">0.75×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.25">1.25×</option>
+              <option value="1.5">1.5×</option>
+              <option value="2">2×</option>
+            </select>
+            <button class="ctrl-btn tag-btn" onclick="triggerTag()">⚑ TAG</button>
+            <button class="ctrl-btn next-btn" onclick="nextChapter()" title="Next chapter">Next ›</button>
+          </div>
+        </div>
+        <div class="progress-row">
+          <span class="time-label" id="time-current">0:00</span>
+          <div class="progress-track" id="progress-track" onclick="seekToClick(event)">
+            <div class="progress-fill" id="progress-fill"></div>
+            <div class="tag-markers" id="tag-markers"></div>
+          </div>
+          <span class="time-label" id="time-total" style="text-align:right;">0:00</span>
+        </div>
+      </div>
+
+      <div class="advance-banner" id="advance-banner">
+        <span id="advance-text"></span>
+        <button class="advance-cancel" onclick="cancelAdvance()">Stay here</button>
+      </div>
+
+      <div class="transcript-area" id="transcript-area">
+        <div class="no-alignment" id="no-align-msg">No alignment loaded for this chapter. Audio-only mode.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: TAGS -->
+    <div class="tags-panel">
+      <div class="panel-header">
+        <span class="panel-title">Problem Tags</span>
+        <span class="tag-count" id="tag-count" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);background:rgba(240,165,0,0.12);padding:2px 8px;border-radius:20px;">0</span>
+      </div>
+      <div class="tag-filter-row">
+        <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" data-filter="pacing" onclick="setFilter('pacing',this)">Pace</button>
+        <button class="filter-btn" data-filter="pronunciation" onclick="setFilter('pronunciation',this)">Pron</button>
+        <button class="filter-btn" data-filter="tone" onclick="setFilter('tone',this)">Tone</button>
+        <button class="filter-btn" data-filter="timing" onclick="setFilter('timing',this)">Time</button>
+        <button class="filter-btn" data-filter="other" onclick="setFilter('other',this)">Other</button>
+      </div>
+      <div class="tags-list" id="tags-list">
+        <div class="tags-empty">
+          <span class="empty-icon">⚑</span>
+          Press TAG while listening<br>to mark a problem area.
+        </div>
+      </div>
+      <div class="export-bar">
+        <button class="btn-export" onclick="exportJSON()">↓ JSON</button>
+        <button class="btn-export" onclick="exportCSV()">↓ CSV</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TAG MODAL -->
+<div id="tag-modal" style="display:none;">
+  <div class="modal-backdrop" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>New Tag</h3>
+      <div class="modal-time" id="modal-time">0:00:00</div>
+      <div class="sentence-preview" id="modal-sentence">—</div>
+      <div class="category-grid">
+        <button class="cat-btn" data-cat="pacing" onclick="selectCat(this)">Pacing</button>
+        <button class="cat-btn" data-cat="pronunciation" onclick="selectCat(this)">Pronounce</button>
+        <button class="cat-btn" data-cat="tone" onclick="selectCat(this)">Tone</button>
+        <button class="cat-btn" data-cat="timing" onclick="selectCat(this)">Timing</button>
+        <button class="cat-btn" data-cat="other" onclick="selectCat(this)">Other</button>
+      </div>
+      <textarea class="note-input" id="modal-note" rows="2" placeholder="Optional note… (press Enter to save)"></textarea>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="cancelTag()">Cancel</button>
+        <button class="btn-save" onclick="saveTag()">Save Tag</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<audio id="audio-player"></audio>
+
+<script>
+// ── STATE ──
+let playlist = [];        // [{name, audioFile, audioURL, alignData}]
+let currentIndex = -1;
+let tags = [];            // all tags across all chapters
+let pendingTag = null;
+let selectedCat = null;
+let activeSentenceIndex = -1;
+let tagFilter = 'all';
+let advanceTimer = null;
+
+const audio = document.getElementById('audio-player');
+
+// ── SETUP ──
+function handleAudioFiles(input) {
+  const files = Array.from(input.files);
+  files.sort((a, b) => a.name.localeCompare(b.name));
+
+  // Merge into existing playlist entries or create new ones
+  files.forEach(f => {
+    const existing = playlist.find(p => p.audioName === f.name);
+    if (existing) {
+      existing.audioFile = f;
+    } else {
+      playlist.push({ audioName: f.name, audioFile: f, audioURL: null, alignData: null });
+    }
+  });
+
+  playlist.sort((a, b) => a.audioName.localeCompare(b.audioName));
+  document.getElementById('audio-chosen').textContent = `${files.length} audio file(s) selected`;
+  checkStartReady();
+}
+
+function handleAlignFiles(input) {
+  const files = Array.from(input.files);
+  let matched = 0;
+
+  const readAll = files.map(f => new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        // Match by chapter number in filename
+        const numMatch = f.name.match(/Chapter_?(\d+)/i);
+        if (numMatch) {
+          const num = numMatch[1];
+          const entry = playlist.find(p => p.audioName.match(new RegExp(`Chapter_?0*${parseInt(num)}`, 'i')));
+          if (entry) { entry.alignData = data; matched++; }
+          else {
+            // No audio yet — create placeholder
+            playlist.push({ audioName: `Chapter_${num.padStart(2,'0')}.wav`, audioFile: null, audioURL: null, alignData: data });
+            matched++;
+          }
+        }
+      } catch(e) {}
+      resolve();
+    };
+    reader.readAsText(f);
+  }));
+
+  Promise.all(readAll).then(() => {
+    playlist.sort((a, b) => a.audioName.localeCompare(b.audioName));
+    document.getElementById('align-chosen').textContent = `${matched} alignment file(s) matched`;
+    checkStartReady();
+  });
+}
+
+function checkStartReady() {
+  const hasAudio = playlist.some(p => p.audioFile);
+  document.getElementById('start-btn').disabled = !hasAudio;
+}
+
+function startSession() {
+  if (!playlist.some(p => p.audioFile)) return;
+
+  // Pre-create object URLs
+  playlist.forEach(p => {
+    if (p.audioFile) p.audioURL = URL.createObjectURL(p.audioFile);
+  });
+
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('app-screen').classList.add('active');
+
+  renderPlaylist();
+  loadChapter(0);
+}
+
+function resetApp() {
+  if (tags.length > 0 && !confirm('Reset session? Unsaved tags will be lost.')) return;
+  location.reload();
+}
+
+// ── PLAYLIST ──
+function renderPlaylist() {
+  const list = document.getElementById('playlist-list');
+  const total = playlist.filter(p => p.audioFile).length;
+  document.getElementById('playlist-count').textContent = total;
+  document.getElementById('book-progress').textContent =
+    currentIndex >= 0 ? `${currentIndex + 1} / ${total}` : '';
+
+  list.innerHTML = playlist.map((p, i) => {
+    if (!p.audioFile) return '';
+    const chapterTags = tags.filter(t => t.chapterIndex === i);
+    const isDone = i < currentIndex;
+    const isActive = i === currentIndex;
+    const name = p.audioName.replace(/\.wav$/i,'').replace(/_/g,' ');
+    return `
+      <div class="playlist-item ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}"
+           onclick="loadChapter(${i})">
+        <span class="playlist-num">${String(i+1).padStart(2,'0')}</span>
+        <span class="playlist-name">${name}</span>
+        ${chapterTags.length > 0 ? `<span class="playlist-tag-count">⚑${chapterTags.length}</span>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// ── CHAPTER LOADING ──
+function loadChapter(index) {
+  if (index < 0 || index >= playlist.length) return;
+  if (!playlist[index].audioFile) return;
+
+  cancelAdvance();
+  currentIndex = index;
+  const chapter = playlist[index];
+
+  audio.src = chapter.audioURL;
+  audio.load();
+
+  const name = chapter.audioName.replace(/\.wav$/i,'').replace(/_/g,' ');
+  document.getElementById('chapter-title').textContent = name;
+  document.getElementById('chapter-subtitle').textContent =
+    chapter.alignData ? `${chapter.alignData.total_sentences} sentences` : 'No alignment';
+
+  // Render transcript
+  const area = document.getElementById('transcript-area');
+  const noAlign = document.getElementById('no-align-msg');
+  area.innerHTML = '';
+  activeSentenceIndex = -1;
+
+  if (chapter.alignData && chapter.alignData.sentences) {
+    noAlign.style.display = 'none';
+    renderTranscript(chapter.alignData.sentences);
+  } else {
+    area.appendChild(noAlign);
+    noAlign.style.display = 'block';
+  }
+
+  updateTagMarkers();
+  renderPlaylist();
+  renderTags();
+
+  audio.play().catch(() => {});
+}
+
+function nextChapter() {
+  const next = playlist.slice(currentIndex + 1).findIndex(p => p.audioFile);
+  if (next >= 0) loadChapter(currentIndex + 1 + next);
+}
+
+function prevChapter() {
+  for (let i = currentIndex - 1; i >= 0; i--) {
+    if (playlist[i].audioFile) { loadChapter(i); return; }
+  }
+}
+
+// Auto-advance on chapter end
+audio.addEventListener('ended', () => {
+  const nextIdx = playlist.slice(currentIndex + 1).findIndex(p => p.audioFile);
+  if (nextIdx < 0) {
+    showToast('Book complete! Export your tags.');
+    return;
+  }
+  const realNext = currentIndex + 1 + nextIdx;
+  const nextName = playlist[realNext].audioName.replace(/\.wav$/i,'').replace(/_/g,' ');
+
+  let countdown = 5;
+  const banner = document.getElementById('advance-banner');
+  const advText = document.getElementById('advance-text');
+
+  banner.classList.add('show');
+  advText.textContent = `Next: ${nextName} — advancing in ${countdown}s`;
+
+  advanceTimer = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) {
+      cancelAdvance();
+      loadChapter(realNext);
+    } else {
+      advText.textContent = `Next: ${nextName} — advancing in ${countdown}s`;
+    }
+  }, 1000);
+});
+
+function cancelAdvance() {
+  if (advanceTimer) { clearInterval(advanceTimer); advanceTimer = null; }
+  document.getElementById('advance-banner').classList.remove('show');
+}
+
+// ── TRANSCRIPT ──
+function renderTranscript(sentences) {
+  const area = document.getElementById('transcript-area');
+  sentences.forEach((s, i) => {
+    const span = document.createElement('span');
+    span.className = 'sentence';
+    span.dataset.index = i;
+    span.dataset.start = s.start;
+    span.dataset.end = s.end;
+    span.textContent = s.text + ' ';
+    span.onclick = () => { audio.currentTime = s.start; audio.play(); };
+    area.appendChild(span);
+  });
+
+  // Re-mark already-tagged sentences
+  const chapterTags = tags.filter(t => t.chapterIndex === currentIndex);
+  chapterTags.forEach(t => markSentenceTagged(t.sentence));
+}
+
+function updateActiveSentence(currentTime) {
+  const chapter = playlist[currentIndex];
+  if (!chapter || !chapter.alignData) return;
+  const sentences = chapter.alignData.sentences;
+  let found = -1;
+  for (let i = 0; i < sentences.length; i++) {
+    if (currentTime >= sentences[i].start && currentTime <= sentences[i].end) { found = i; break; }
+  }
+  if (found === activeSentenceIndex) return;
+  activeSentenceIndex = found;
+  document.querySelectorAll('.sentence').forEach(el => el.classList.remove('active'));
+  if (found >= 0) {
+    const el = document.querySelector(`.sentence[data-index="${found}"]`);
+    if (el) { el.classList.add('active'); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  }
+}
+
+function getCurrentSentenceText(currentTime) {
+  const chapter = playlist[currentIndex];
+  if (!chapter || !chapter.alignData) return null;
+  for (const s of chapter.alignData.sentences) {
+    if (currentTime >= s.start && currentTime <= s.end) return s.text;
+  }
+  let nearest = null, bestDiff = Infinity;
+  for (const s of chapter.alignData.sentences) {
+    const diff = Math.abs(s.start - currentTime);
+    if (diff < bestDiff) { bestDiff = diff; nearest = s; }
+  }
+  return nearest ? nearest.text : null;
+}
+
+// ── AUDIO CONTROLS ──
+audio.addEventListener('timeupdate', () => {
+  const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('time-current').textContent = formatTime(audio.currentTime);
+  updateActiveSentence(audio.currentTime);
+});
+
+audio.addEventListener('loadedmetadata', () => {
+  document.getElementById('time-total').textContent = formatTime(audio.duration);
+  updateTagMarkers();
+});
+
+audio.addEventListener('play', () => { document.getElementById('play-btn').textContent = '⏸'; });
+audio.addEventListener('pause', () => { document.getElementById('play-btn').textContent = '▶'; });
+
+function togglePlay() {
+  if (audio.paused) audio.play(); else audio.pause();
+}
+
+function seekRelative(sec) {
+  audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + sec));
+}
+
+function seekToClick(e) {
+  const track = document.getElementById('progress-track');
+  const rect = track.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  audio.currentTime = pct * (audio.duration || 0);
+}
+
+function setSpeed(v) { audio.playbackRate = parseFloat(v); }
+
+// ── TAGGING ──
+function triggerTag() {
+  const wasPlaying = !audio.paused;
+  audio.pause();
+  const time = audio.currentTime;
+  const sentenceText = getCurrentSentenceText(time) || '—';
+
+  pendingTag = { time, sentenceText, wasPlaying, chapterIndex: currentIndex,
+    chapterName: playlist[currentIndex].audioName.replace(/\.wav$/i,'').replace(/_/g,' ') };
+  selectedCat = null;
+
+  document.getElementById('modal-time').textContent =
+    `${pendingTag.chapterName} — ${formatTimeLong(time)}`;
+  document.getElementById('modal-sentence').textContent = sentenceText;
+  document.getElementById('modal-note').value = '';
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('tag-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('modal-note').focus(), 100);
+}
+
+document.getElementById('modal-note').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveTag(); }
+  if (e.key === 'Escape') cancelTag();
+});
+
+function selectCat(btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedCat = btn.dataset.cat;
+}
+
+function saveTag() {
+  if (!pendingTag) return;
+  const tag = {
+    id: Date.now(),
+    chapterIndex: pendingTag.chapterIndex,
+    chapterName: pendingTag.chapterName,
+    time: pendingTag.time,
+    sentence: pendingTag.sentenceText,
+    category: selectedCat || 'other',
+    note: document.getElementById('modal-note').value.trim(),
+  };
+  tags.push(tag);
+  tags.sort((a, b) => a.chapterIndex - b.chapterIndex || a.time - b.time);
+  renderTags();
+  updateTagMarkers();
+  markSentenceTagged(pendingTag.sentenceText);
+  renderPlaylist();
+  closeModal();
+  showToast(`Tagged: ${tag.category} @ ${tag.chapterName} ${formatTime(tag.time)}`);
+  if (pendingTag.wasPlaying) audio.play();
+  pendingTag = null;
+}
+
+function cancelTag() {
+  if (pendingTag && pendingTag.wasPlaying) audio.play();
+  pendingTag = null;
+  closeModal();
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.querySelector('.modal-backdrop')) {
+    document.getElementById('tag-modal').style.display = 'none';
+  }
+}
+
+function deleteTag(id) {
+  tags = tags.filter(t => t.id !== id);
+  renderTags();
+  updateTagMarkers();
+  renderPlaylist();
+}
+
+function markSentenceTagged(text) {
+  document.querySelectorAll('.sentence').forEach(el => {
+    if (el.textContent.trim() === text.trim()) el.classList.add('tagged');
+  });
+}
+
+// ── RENDER TAGS ──
+const CAT_COLORS = {
+  pacing: '#3b82f6', pronunciation: '#ec4899', tone: '#8b5cf6',
+  timing: '#10b981', other: '#6b7280',
+};
+
+function setFilter(f, btn) {
+  tagFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTags();
+}
+
+function renderTags() {
+  const list = document.getElementById('tags-list');
+  const filtered = tagFilter === 'all' ? tags : tags.filter(t => t.category === tagFilter);
+  document.getElementById('tag-count').textContent = tags.length;
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="tags-empty"><span class="empty-icon">⚑</span>${
+      tagFilter === 'all' ? 'Press TAG while listening<br>to mark a problem area.' : `No ${tagFilter} tags yet.`
+    }</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(t => `
+    <div class="tag-item" onclick="jumpToTag(${t.chapterIndex}, ${t.time})">
+      <div class="tag-item-top">
+        <span class="tag-chapter-label">Ch.${t.chapterIndex + 1}</span>
+        <span class="tag-timestamp">${formatTimeLong(t.time)}</span>
+        <span class="tag-category-badge" style="background:${CAT_COLORS[t.category] || CAT_COLORS.other}">${t.category}</span>
+        <button class="tag-delete" onclick="event.stopPropagation(); deleteTag(${t.id})" title="Delete">✕</button>
+      </div>
+      ${t.sentence !== '—' ? `<div class="tag-sentence-text">"${t.sentence}"</div>` : ''}
+      ${t.note ? `<div class="tag-note">↳ ${t.note}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function jumpToTag(chapterIndex, time) {
+  if (chapterIndex !== currentIndex) {
+    loadChapter(chapterIndex);
+    audio.addEventListener('canplay', () => {
+      audio.currentTime = time;
+      audio.play();
+    }, { once: true });
+  } else {
+    audio.currentTime = time;
+    audio.play();
+  }
+}
+
+function updateTagMarkers() {
+  const container = document.getElementById('tag-markers');
+  if (!audio.duration) { container.innerHTML = ''; return; }
+  const chapterTags = tags.filter(t => t.chapterIndex === currentIndex);
+  container.innerHTML = chapterTags.map(t => {
+    const pct = (t.time / audio.duration) * 100;
+    return `<div class="tag-marker" style="left:${pct}%" title="${formatTimeLong(t.time)}: ${t.category}"></div>`;
+  }).join('');
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowLeft') seekRelative(-5);
+  if (e.code === 'ArrowRight') seekRelative(5);
+  if (e.code === 'KeyT') triggerTag();
+  if (e.code === 'ArrowUp') { e.preventDefault(); prevChapter(); }
+  if (e.code === 'ArrowDown') { e.preventDefault(); nextChapter(); }
+});
+
+// ── EXPORT ──
+function exportJSON() {
+  if (tags.length === 0) { showToast('No tags to export.'); return; }
+  const data = {
+    exported_at: new Date().toISOString(),
+    total_tags: tags.length,
+    chapters_reviewed: [...new Set(tags.map(t => t.chapterName))],
+    tags: tags.map(t => ({
+      chapter: t.chapterName,
+      chapter_index: t.chapterIndex,
+      timestamp_seconds: t.time,
+      timestamp_formatted: formatTimeLong(t.time),
+      category: t.category,
+      sentence: t.sentence,
+      note: t.note,
+    }))
+  };
+  downloadFile(JSON.stringify(data, null, 2), 'tags_export.json', 'application/json');
+  showToast(`Exported ${tags.length} tags`);
+}
+
+function exportCSV() {
+  if (tags.length === 0) { showToast('No tags to export.'); return; }
+  const rows = [['Chapter', 'Timestamp', 'Seconds', 'Category', 'Sentence', 'Note']];
+  tags.forEach(t => {
+    rows.push([
+      t.chapterName,
+      formatTimeLong(t.time),
+      t.time.toFixed(2),
+      t.category,
+      `"${(t.sentence || '').replace(/"/g, '""')}"`,
+      `"${(t.note || '').replace(/"/g, '""')}"`,
+    ]);
+  });
+  downloadFile(rows.map(r => r.join(',')).join('\n'), 'tags_export.csv', 'text/csv');
+  showToast(`Exported ${tags.length} tags`);
+}
+
+function downloadFile(content, filename, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = filename;
+  a.click();
+}
+
+// ── HELPERS ──
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function formatTimeLong(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  return h > 0
+    ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+    : `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
