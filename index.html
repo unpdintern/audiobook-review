@@ -1222,6 +1222,7 @@
 // ══════════════════════════════════════════
 const SUPABASE_URL  = 'https://oomwnszklwbmhbwsrlok.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vbXduc3prbHdibWhid3NybG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzcwMzAsImV4cCI6MjA4ODkxMzAzMH0.oFr9hWqmqQSjjOZQ40glfm7wakjpyhbVwVSiDSN2-nQ';
+const SUPABASE_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vbXduc3prbHdibWhid3NybG9rIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzMzNzAzMCwiZXhwIjoyMDg4OTEzMDMwfQ.vtstL-4F1XKtvxwX0XU1tpomBmqPhA8aUSyRN6DvHYQ';
 const BUCKET        = 'audiobook';
 const ADMIN_CODE    = 'admin2025';   // change this!
 
@@ -1268,8 +1269,8 @@ async function sbList(prefix) {
     {
       method: 'POST',
       headers: {
-        'apikey': SUPABASE_ANON,
-        'Authorization': `Bearer ${SUPABASE_ANON}`,
+        'apikey': SUPABASE_SERVICE,
+        'Authorization': `Bearer ${SUPABASE_SERVICE}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ prefix, limit: 200, offset: 0 })
