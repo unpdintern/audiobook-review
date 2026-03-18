@@ -1273,7 +1273,7 @@ async function sbList(prefix) {
         'Authorization': `Bearer ${SUPABASE_SERVICE}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ prefix, limit: 200, offset: 0 })
+      body: JSON.stringify({ prefix, limit: 200, offset: 0, sortBy: { column: 'name', order: 'asc' } })
     }
   );
   const data = await res.json();
